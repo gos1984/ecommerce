@@ -1,0 +1,8 @@
+table th, table td {
+  vertical-align: middle;
+}
+table th img, table td img {
+  width: 100px;
+}
+
+/*# sourceMappingURL=product-list.component.css.map */
