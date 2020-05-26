@@ -10,10 +10,15 @@ import {ActivatedRoute} from '@angular/router';
 })
 export class ProductListComponent implements OnInit {
 
-  products: Product[];
-  currentCategoryId: number;
+  products: Product[] = [];
+  currentCategoryId: number = 1;
+  previousCategoryId: number = 1;
   currentCategoryName: string;
-  searchMode: boolean;
+  searchMode: boolean = false;
+  pageNumber: number = 1;
+  pageSize: number = 5;
+  totalElements: number = 0;
+  previousKeyword: string = null;
 
   constructor(private productService: ProductService,
               private route: ActivatedRoute) { }
@@ -39,11 +44,16 @@ export class ProductListComponent implements OnInit {
 
   handleSearchProducts() {
     const theKeyword = this.route.snapshot.paramMap.get('keyword');
-    this.productService.searchProducts(theKeyword).subscribe(
-      data => {
-        this.products = data;
-      }
-    );
+
+    if (this.previousKeyword != theKeyword) {
+      this.pageNumber = 1;
+    }
+
+    this.previousKeyword = theKeyword;
+
+    console.log(`keyword=${theKeyword}, pageNumber=${this.previousKeyword}`);
+
+    this.productService.searchProductsPaginate(this.pageNumber - 1, this.pageSize, theKeyword).subscribe(this.processResult());
   }
 
   handleListProducts() {
@@ -57,10 +67,35 @@ export class ProductListComponent implements OnInit {
       this.currentCategoryName = 'Books';
     }
 
-    this.productService.getProductList(this.currentCategoryId).subscribe(
-      data => {
-        this.products = data;
-      }
-    );
+    // tslint:disable-next-line:triple-equals
+    if (this.previousCategoryId != this.currentCategoryId) {
+        this.pageNumber = 1;
+    }
+
+    this.previousCategoryId = this.currentCategoryId;
+    console.log(`currentCategoryId=${this.currentCategoryId}, pageNumber=${this.pageNumber}`);
+
+    // this.productService.getProductList(this.currentCategoryId).subscribe(
+    //   data => {
+    //     this.products = data;
+    //   }
+    // );
+
+    this.productService.getProductListPaginate(this.pageNumber - 1, this.pageSize, this.currentCategoryId).subscribe(this.processResult());
+  }
+
+  private processResult() {
+    return data => {
+      this.products = data._embedded.products;
+      this.pageNumber = data.page.number + 1;
+      this.pageSize = data.page.size;
+      this.totalElements = data.page.totalElements;
+    }
+  }
+
+  updatePageSize(pageSize: number) {
+    this.pageSize = pageSize;
+    this.pageNumber = 1;
+    this.listProducts();
   }
 }
